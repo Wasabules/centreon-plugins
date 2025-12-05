@@ -29,9 +29,14 @@ sub new {
     my $self = $class->SUPER::new(package => __PACKAGE__, %options);
     bless $self, $class;
 
-    $self->{version} = '1.0';
+    $self->{version} = '2.0';
     %{$self->{modes}} = (
         'global-status'    => 'hardware::devices::gorgy::ntpserver::snmp::mode::globalstatus',
+        'hardware-status'  => 'hardware::devices::gorgy::ntpserver::snmp::mode::hardwarestatus',
+        'system-info'      => 'hardware::devices::gorgy::ntpserver::snmp::mode::systeminfo',
+        'inputs'           => 'hardware::devices::gorgy::ntpserver::snmp::mode::inputs',
+        'outputs'          => 'hardware::devices::gorgy::ntpserver::snmp::mode::outputs',
+        'ntp-server'       => 'hardware::devices::gorgy::ntpserver::snmp::mode::ntpserver',
         'interfaces'       => 'snmp_standard::mode::interfaces',
         'list-interfaces'  => 'snmp_standard::mode::listinterfaces',
     );
