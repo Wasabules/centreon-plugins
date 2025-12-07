@@ -120,6 +120,7 @@ sub new {
     
     $options{options}->add_options(arguments => {
         'filter-input:s'         => { name => 'filter_input' },
+        'no-skip-disabled'       => { name => 'no_skip_disabled' },
         'warning-input-status:s' => { name => 'warning_input_status', default => '%{is_disabled} == 1 or %{input_state} =~ /Waiting|Ignored/i' },
         'critical-input-status:s'=> { name => 'critical_input_status', default => '%{input_state} =~ /No signal|Error|Not selectable/i and %{is_driving} == 1' },
         'warning-satellites:s'   => { name => 'warning_satellites', default => '' },
@@ -180,15 +181,28 @@ sub manage_selection {
         my $instance = $1;
         my $result = $options{snmp}->map_instance(mapping => $mapping, results => $snmp_result, instance => $instance);
 
+        # Skip disabled inputs by default unless --no-skip-disabled
+        if (!defined($self->{option_results}->{no_skip_disabled}) && 
+            defined($result->{inputIsDisabled}) && $result->{inputIsDisabled} == 1) {
+            $self->{output}->output_add(long_msg => "skipping disabled input #" . $instance, debug => 1);
+            next;
+        }
+
         if (defined($self->{option_results}->{filter_input}) && $self->{option_results}->{filter_input} ne '' &&
             $result->{inputCardDescription} !~ /$self->{option_results}->{filter_input}/) {
             $self->{output}->output_add(long_msg => "skipping input '" . $result->{inputCardDescription} . "'.", debug => 1);
             next;
         }
 
+        # Clean up description and address (handle empty/invalid values)
+        my $desc = defined($result->{inputCardDescription}) && $result->{inputCardDescription} ne '' 
+            ? $result->{inputCardDescription} : "Input #$instance";
+        my $addr = defined($result->{inputCardAddress}) && $result->{inputCardAddress} ne '' 
+            ? $result->{inputCardAddress} : $instance;
+
         $self->{inputs}->{$instance} = {
-            input_desc         => $result->{inputCardDescription},
-            input_addr         => $result->{inputCardAddress},
+            input_desc         => $desc,
+            input_addr         => $addr,
             is_driving         => $result->{inputIsDriving},
             input_state        => $result->{inputState},
             is_disabled        => $result->{inputIsDisabled},
